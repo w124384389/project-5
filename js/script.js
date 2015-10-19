@@ -50,7 +50,8 @@ var Model = {
     }
 };
 
-
+// var marker;
+// Model.initialPlaces.marker = marker;
 //initialize the map
 // var map;
 // function initMap(){
@@ -87,7 +88,8 @@ var ViewModel = function(){
     self.currentPlace = ko.observable(self.placeList()[0]);
 
     self.infoWindow = ko.observableArray();
-    self.marker = ko.observableArray();
+    var marker = [];
+    self.placeList.marker = marker;
 
     //search box, filter places
     self.search = ko.computed(function(){
@@ -103,12 +105,12 @@ var ViewModel = function(){
     var currentInfoWindow;
     //filter the markers and show the related marker info window
     this.markerSearch = function(){
-        for (var i = 0; i < self.marker().length; i++){
+        for (var i = 0; i < self.placeList.marker.length; i++){
             //hide all markers at first
-            self.marker()[i].setVisible(false);
-            if (self.query().toLowerCase() === '' || self.marker()[i].name.toLowerCase().indexOf(self.query().toLowerCase()) > -1){
+            self.placeList.marker[i].setVisible(false);
+            if (self.query().toLowerCase() === '' || self.placeList.marker()[i].name.toLowerCase().indexOf(self.query().toLowerCase()) > -1){
                 //show marker if match the search
-                self.marker()[i].setVisible(true);
+                self.placeList.marker[i].setVisible(true);
             }
             typeof currentInfoWindow !== 'undefined' && currentInfoWindow.close();
             currentInfoWindow = self.infoWindow()[i];
@@ -121,20 +123,20 @@ var ViewModel = function(){
     ko.computed(function(){
         for (var i = 0; i < Model.initialPlaces.length; i++){
             //markers
-            self.marker.push(new google.maps.Marker({
+            self.placeList.marker[i] = new google.maps.Marker({
                 position: {lat:Model.initialPlaces[i].lat, lng:Model.initialPlaces[i].lng},
                 title: Model.initialPlaces[i].name,
                 map: map,
                 draggable: false,
                 animation: google.maps.Animation.DROP
         
-            }));
+            });
             self.infoWindow.push(new google.maps.InfoWindow({
                 content: Model.initialPlaces[i].name 
             }));
             //click to markers
             (function(i){
-                google.maps.event.addListener(self.marker()[i], 'click', function() {
+                google.maps.event.addListener(self.placeList.marker[i], 'click', function() {
                     mapEvents(i);
                     // set currentPlace to the clicked marker
                     self.setPlace(self.placeList()[i]);
@@ -147,13 +149,13 @@ var ViewModel = function(){
         // close prev infowindow
         typeof currentInfoWindow !== 'undefined' && currentInfoWindow.close();
         // show infowindow
-        self.infoWindow()[i].open(map, self.marker()[i]);
+        self.infoWindow()[i].open(map, self.placeList.marker[i]);
         // center map to current marker
         //map.panTo(self.markers()[i].getPosition());
         // animate marker
-        self.marker()[i].setAnimation(google.maps.Animation.BOUNCE);
+        self.placeList.marker[i].setAnimation(google.maps.Animation.BOUNCE);
         // animate marker only once
-        setTimeout(function(){ self.marker()[i].setAnimation(null); }, 750);
+        setTimeout(function(){ self.placeList.marker[i].setAnimation(null); }, 750);
 
         currentInfoWindow = self.infoWindow()[i];
     }
@@ -162,8 +164,8 @@ var ViewModel = function(){
     self.setPlace = function(place) {
         self.currentPlace(place);
         // list items click events
-        for (var i in self.marker()) {
-            if (self.marker()[i].name == place.name()) {
+        for (var i in self.placeList.marker) {
+            if (self.placeList.marker[i].name == place.name()) {
                 // add some click marker click logic here
                 mapEvents(i);
             }
