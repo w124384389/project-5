@@ -108,7 +108,7 @@ var ViewModel = function(){
         for (var i = 0; i < self.placeList.marker.length; i++){
             //hide all markers at first
             self.placeList.marker[i].setVisible(false);
-            if (self.query().toLowerCase() === '' || self.placeList.marker()[i].name.toLowerCase().indexOf(self.query().toLowerCase()) > -1){
+            if (self.query().toLowerCase() === '' || self.placeList.marker[i].name.toLowerCase().indexOf(self.query().toLowerCase()) > -1){
                 //show marker if match the search
                 self.placeList.marker[i].setVisible(true);
             }
