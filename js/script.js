@@ -1,81 +1,96 @@
-
-
 /*global Google */
-
+'use strict';
 //Model: object that store all the location information
 var Model = {
     initialPlaces:[
         {
-            name:"Broad Ripple Park",
-            lat:39.86987,
-            lng:-86.13311,
-            address:"1550 Broad Ripple Ave, Indianapolis, IN 46220"
+            name: "Hanover College",
+            lat:38.719250,
+            lng:-85.462368,
+            address:"484 Ball Dr, Hanover",
+            viewUrl:"https://maps.googleapis.com/maps/api/streetview?size=200x100&location=517 Ball Drive, Hanover&key=AIzaSyAgmhMYBxzru1KhHyjcLzlajGq0awnBDr4"
         },
 
         {
-            name:"Humane Society of Indianapolis",
-            lat:39.89966,
-            lng:-86.21649,
-            address:"7929 N Michigan Rd, Indianapolis, IN 46268"
+            name: "Harrison College",
+            lat:39.926824,
+            lng:-86.264909,
+            address:"1378 IN-46, Terre Haute",
+            viewUrl:"https://maps.googleapis.com/maps/api/streetview?size=200x100&location=1378 IN-46, Terre Haute&key=AIzaSyAgmhMYBxzru1KhHyjcLzlajGq0awnBDr4"
         },
 
         {
-            name:"Smock Bark Park",
-            lat:39.63974,
-            lng:-86.09653,
-            address:"4200 E County Line Rd, Indianapolis, IN 46237"
+            name: "Ball State University",
+            lat:40.197237,
+            lng:-85.408841,
+            address:"2000 W University Ave, Muncie",
+            viewUrl:"https://maps.googleapis.com/maps/api/streetview?size=200x100&location=2000 W University Ave, Muncie&key=AIzaSyAgmhMYBxzru1KhHyjcLzlajGq0awnBDr4"
         },
 
         {
-            name:"Club Canine Doggie",
-            lat:39.97141,
-            lng:-86.12785,
-            address:"622 S Rangeline Rd, Carmel, IN 46032"
+            name: "Butler University",
+            lat:39.839601,
+            lng:-86.169720,
+            address:"4600 Sunset Ave, Indianapolis",
+            viewUrl:"https://maps.googleapis.com/maps/api/streetview?size=200x100&location=4600 Sunset Ave, Indianapolis&key=AIzaSyAgmhMYBxzru1KhHyjcLzlajGq0awnBDr4"
         },
 
         {
-            name:"Pierson Bark Park",
-            lat:39.97904,
-            lng:-85.95624,
-            address:"11787 E 131st St, Fishers, IN 46038"
+            name: "Franklin College",
+            lat:39.478646,
+            lng:-86.045479,
+            address:"101 Branigin Blvd, Franklin",
+            viewUrl:"https://maps.googleapis.com/maps/api/streetview?size=200x100&location=101 Branigin Blvd, Franklin&key=AIzaSyAgmhMYBxzru1KhHyjcLzlajGq0awnBDr4"
         }
     ],
-    mapOptions: {
-        center: {lat: 39.86987, lng: -86.13311},
-        zoom: 10,
+
+};
+
+//initialize the map
+var map;
+function initMap(){
+    var mapOptions = {
+        zoom: 7,
+        center: new google.maps.LatLng(39.478646, -86.045479),
         mapTypeId: google.maps.MapTypeId.TERRAIN,
         mapTypeControlOptions: {
             position: google.maps.ControlPosition.TOP_CENTER
         }
     }
-};
+    map = new google.maps.Map(document.getElementById('map'),mapOptions);
+}; 
 
-// var marker;
-// Model.initialPlaces.marker = marker;
-//initialize the map
-// var map;
-// function initMap(){
-     var map = new google.maps.Map(document.getElementById('map'),Model.mapOptions);
-// };
-
-
-
-//initialize the markers and info window and animation
-
+//bind necessary information
 var Place = function(data){
     var self = this;
     self.name = ko.observable(data.name);
     self.address = ko.observable(data.address);
     self.lat = ko.observable(data.lat);
     self.lng = ko.observable(data.lng);
-    
+    //self.url = ko.observable(data.viewUrl); 
+    //wiki info API
+    //https://www.udacity.com/course/viewer#!/c-ud110/l-3310298553/e-3162128589/m-3162128591
+    this.wikiInfo = ko.observable();
+    this.wikiHeading = ko.observable('Wiki Info About ');
+    var wikiRequesttimeout = setTimeout(function(){
+        self.wikiHeading("Failed to get wikipedia information.");
+    }, 5000);
+    ko.computed(function() {
+        $.ajax({
+            url: 'http://en.wikipedia.org/w/api.php?action=opensearch&search=' + data.name + '&format=json&callback=wikiCallback',
+            dataType: 'jsonp',
+            success: function(response){
+                self.wikiInfo(response[2]);
+                clearTimeout(wikiRequesttimeout);
+            }
+        });
+    }, this); 
 };
 
 
 //octopus
 var ViewModel = function(){
     var self = this;
-    //self.searchList = ko.observableArray(Model.initialPlaces);
     self.query = ko.observable('');
     self.placeList = ko.observableArray();
 
@@ -88,6 +103,7 @@ var ViewModel = function(){
     self.currentPlace = ko.observable(self.placeList()[0]);
 
     self.infoWindow = ko.observableArray();
+    //make marker a property of place
     var marker = [];
     self.placeList.marker = marker;
 
@@ -108,7 +124,7 @@ var ViewModel = function(){
         for (var i = 0; i < self.placeList.marker.length; i++){
             //hide all markers at first
             self.placeList.marker[i].setVisible(false);
-            if (self.query().toLowerCase() === '' || self.placeList.marker[i].name.toLowerCase().indexOf(self.query().toLowerCase()) > -1){
+            if (self.query().toLowerCase() === '' || self.placeList.marker[i].title.toLowerCase().indexOf(self.query().toLowerCase()) > -1){
                 //show marker if match the search
                 self.placeList.marker[i].setVisible(true);
             }
@@ -117,32 +133,40 @@ var ViewModel = function(){
         }
     };
 
+    //https://www.devbridge.com/articles/knockout-a-real-world-example/
     self.query.subscribe(self.markerSearch);
 
     //enable markers with infowindow
     ko.computed(function(){
+        var bounds = new google.maps.LatLngBounds();
+        var lat = Model.initialPlaces[i].lat;
+        var lng = Model.initialPlaces[i].lng;
+        var myLatLng = new google.maps.LatLng(lat, lng);
         for (var i = 0; i < Model.initialPlaces.length; i++){
             //markers
             self.placeList.marker[i] = new google.maps.Marker({
-                position: {lat:Model.initialPlaces[i].lat, lng:Model.initialPlaces[i].lng},
+                position: new google.maps.LatLng(Model.initialPlaces[i].lat, Model.initialPlaces[i].lng),
                 title: Model.initialPlaces[i].name,
                 map: map,
                 draggable: false,
                 animation: google.maps.Animation.DROP
-        
             });
+            bounds.extend(myLatLng);
+            self.contentString =  Model.initialPlaces[i].name + '<br/>' + Model.initialPlaces[i].address;
+            //push the infowindow in the observable array
             self.infoWindow.push(new google.maps.InfoWindow({
-                content: Model.initialPlaces[i].name 
+                content: self.contentString 
             }));
-            //click to markers
+            //set the clicked markers to current place
             (function(i){
                 google.maps.event.addListener(self.placeList.marker[i], 'click', function() {
                     mapEvents(i);
                     // set currentPlace to the clicked marker
                     self.setPlace(self.placeList()[i]);
                 });
-            })(i);
+            })(i);    
         }
+        map.fitBounds(bounds);
     }, this);
 
     function mapEvents(i){
@@ -150,23 +174,23 @@ var ViewModel = function(){
         typeof currentInfoWindow !== 'undefined' && currentInfoWindow.close();
         // show infowindow
         self.infoWindow()[i].open(map, self.placeList.marker[i]);
-        // center map to current marker
-        //map.panTo(self.markers()[i].getPosition());
+        //https://developers.google.com/maps/documentation/javascript/reference?hl=en
+        //change the center of the map to the given location
+        map.panTo(self.placeList.marker[i].getPosition());
         // animate marker
         self.placeList.marker[i].setAnimation(google.maps.Animation.BOUNCE);
         // animate marker only once
-        setTimeout(function(){ self.placeList.marker[i].setAnimation(null); }, 750);
+        setTimeout(function(){ self.placeList.marker[i].setAnimation(null); }, 800);
 
         currentInfoWindow = self.infoWindow()[i];
     }
 
-    // set current Sight
+    // set current Place
     self.setPlace = function(place) {
         self.currentPlace(place);
         // list items click events
         for (var i in self.placeList.marker) {
-            if (self.placeList.marker[i].name == place.name()) {
-                // add some click marker click logic here
+            if (self.placeList.marker[i].title == place.name()) {
                 mapEvents(i);
             }
         }
@@ -174,8 +198,8 @@ var ViewModel = function(){
 
 };
 
-// //helper function: check the viewport
-// function windowSize() {
-// }
 
-ko.applyBindings(new ViewModel());
+function run() {
+    initMap();
+    ko.applyBindings(new ViewModel());
+}

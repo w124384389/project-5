@@ -11,22 +11,30 @@
     <link rel="stylesheet" href="css/bootstrap.css">
   </head>
   <body>
-
-        <div  class="col-md-10" id="map"></div>
-        <div class="col-md-2 searchbar">
-            <h2>Search</h2>
-            <input placeholder="Search…" id="s-input" class="controls" type="search" data-bind="textInput: query, valueUpdate: 'keyup'"></input>
-            <ul data-bind="foreach: search()">
+      
+        <div  class="col-md-9" id="map"></div>
+        <div class="col-md-3">
+            <div  id="searchList">
+              <h2>Search</h2>
+              <input placeholder="Search…" id="s-input" class="controls" type="search" data-bind="textInput: query, valueUpdate: 'keyup'"></input>
+              <ul data-bind="foreach: search()">
                 <li data-bind="text: name, click: $parent.setPlace"></li>
-            </ul>
+              </ul>
+            </div>
+            <div class="info-box" data-bind="with: currentPlace">
+              <h2 data-bind="text: wikiHeading"><span data-bind="text: name"></span>:</h2>
+              <article id="wiki-info" data-bind="text: wikiInfo"></article>
+            </div>
+<!--             <div id="streetView" data-bind="with: currentPlace">
+              <h3>Google Street View</h3>
+              <img class="bgimg" data-bind="attr:{src: url}">
+            </div> -->
 
         </div>
-
     
-    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=places"></script>
     <script src="js/libs/jquery.min.js"></script>  
-    <script src="js/libs/knockout-3.3.0.js"></script>
- 
+    <script src="js/libs/knockout-3.3.0.js"></script> 
     <script src="js/script.js"></script>
+    <script src="http://maps.google.com/maps/api/js?callback=run" async defer></script>
   </body>
 </html>
